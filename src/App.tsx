@@ -4,7 +4,7 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { FileDrop } from 'react-file-drop'
 
 
-const ffmpeg = createFFmpeg({ corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js', log: true });
+const ffmpeg = createFFmpeg({ log: true });
 
 function App() {
   const [ready, setReady] = useState(false);
