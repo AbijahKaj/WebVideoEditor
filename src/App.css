@@ -1,38 +1,46 @@
-.App {
+body{
+  transition: background-color .3s ease, color .3s ease;
+}
+.wrapper{
+  width: 60%;
+  max-width: 90%;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+   -khtml-user-select: none; /* Konqueror HTML */
+     -moz-user-select: none; /* Old versions of Firefox */
+      -ms-user-select: none; /* Internet Explorer/Edge */
+          user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
+.file-drop, video{
+  width: 100%;
+  height: fit-content;
+  border-radius: '20px';
+  font-weight: bold;
+  font-size: large;
+}
+
+.file-drop > .file-drop-target{
+  transition: border-color .3s ease;
+  border: 0.2em solid #352e2c;
+  border-radius: 1em;
   text-align: center;
+  padding: 8em 0em;
+  cursor: pointer;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.file-drop > .file-drop-target.file-drop-dragging-over-target{
+  border-color: #90ee90;
+  transition: border-color .3s ease;
+  color: #cacaca
+}
+.hidden{
+  display: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
