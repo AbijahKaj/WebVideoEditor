@@ -1,4 +1,4 @@
-# New Project
+# Web Video Editor
 
 > ✨ Bootstrapped with Create Snowpack App (CSA).
 
