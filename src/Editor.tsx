@@ -2,9 +2,10 @@
 import { useState, useRef, useEffect, FC } from 'react'
 import './editor.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPause, faPlay, faSync, faStepBackward, faStepForward, faCamera, faDownload, faEraser } from '@fortawesome/free-solid-svg-icons'
+import { faPause, faPlay, faSync, faStepBackward, faStepForward, faCamera, faDownload, faEraser, faGripLinesVertical } from '@fortawesome/free-solid-svg-icons'
 
 import { fetchFile, FFmpeg } from '@ffmpeg/ffmpeg'
+import { Box } from '@mui/material'
 
 interface Timing { 'start': number, 'end': number }
 
@@ -28,6 +29,8 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
 
     //Stateful array handling storage of the start and end times of videos
     const [timings, setTimings] = useState<Timing[]>([])
+
+    const [selectedGrabber, setSelectedGrabber] = useState<number | null>(null)
 
 
     //Ref handling metadata needed for trim markers
@@ -225,6 +228,35 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
 
     }
 
+    //Function handling adding new trim markers logic
+    const addGrabber = () => {
+        const time = timings
+        const end = time[time.length - 1].end + difference
+        if (end >= playVideoRef.current.duration) {
+            return
+        }
+        time.push({ 'start': end + 0.2, 'end': playVideoRef.current.duration })
+        setTimings(time)
+        addActiveSegments()
+    }
+
+    //Function handling deletion of trimmers logic
+    const deleteGrabber = () => {
+        if (selectedGrabber) {
+            let time = timings
+            currentlyGrabbedRef.current = { 'index': 0, 'type': 'start' }
+            if (time.length === 1) {
+                return
+            }
+            time.splice(selectedGrabber, 1)
+            progressBarRef.current.style.left = `${time[0].start / playVideoRef.current.duration * 100}%`
+            playVideoRef.current.currentTime = time[0].start
+            progressBarRef.current.style.width = '0%'
+            addActiveSegments()
+        }
+
+    }
+
     const addActiveSegments = () => {
         if (playVideoRef.current && playBackBarRef.current) {
             let colors = ''
@@ -288,7 +320,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
     }
 
     return (
-        <div className='wrapper'>
+        <Box component="span" sx={{ p: 2, width: '100%' }}>
             <video className='video'
                 muted={isMuted}
                 ref={playVideoRef}
@@ -331,7 +363,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                                         <path className='st0' d='M1 14L1 14c-0.6 0-1-0.4-1-1V1c0-0.6 0.4-1 1-1h0c0.6 0 1 0.4 1 1v12C2 13.6 1.6 14 1 14zM5 14L5 14c-0.6 0-1-0.4-1-1V1c0-0.6 0.4-1 1-1h0c0.6 0 1 0.4 1 1v12C6 13.6 5.6 14 5 14zM9 14L9 14c-0.6 0-1-0.4-1-1V1c0-0.6 0.4-1 1-1h0c0.6 0 1 0.4 1 1v12C10 13.6 9.6 14 9 14z' />
                                     </svg>
                                 </div>
-                                {/* Markup and logic for the end trim marker */}
                                 <div id='grabberEnd' className='grabber end'
                                     style={{ left: `${timings[0].end / playVideoRef.current.duration * 100}%` }}
                                     onMouseDown={(event) => {
@@ -369,6 +400,9 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                     <button className='seek-end' title='Skip to next clip' onClick={skipNext}><FontAwesomeIcon icon={faStepForward} /></button>
                 </div>
                 <div>
+                    {selectedGrabber && (<button title='Delete grabber' className='trim-control margined' onClick={deleteGrabber}>Delete <FontAwesomeIcon icon={faGripLinesVertical} /></button>
+                    )}
+                    <button title='Add grabber' className='trim-control margined' onClick={addGrabber}>Add <FontAwesomeIcon icon={faGripLinesVertical} /></button>
                     <button title='Save changes' className='trim-control' onClick={saveVideo}>Save</button>
                 </div>
             </div>
@@ -385,7 +419,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                     </div>
                 </div>
                 : ''}
-        </div>
+        </Box>
     )
 }
 

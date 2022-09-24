@@ -3,9 +3,10 @@ import './App.css';
 import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { FileDrop } from 'react-file-drop'
 import Editor from './Editor';
+import { Box, Button, Grid } from '@mui/material';
 
 
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js', log: true });
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -28,31 +29,31 @@ function App() {
   }
 
 
-  return ready ? (<div className="App">
-    <div className={'wrapper'}>
-      {video ? (
-        <Editor
-				videoUrl={URL.createObjectURL(video)}
-        ffmpeg={ffmpeg}
-			/>
-      ) : (
-        <>
-          <input
-            onChange={(e) => startUploading(e.target.files)}
-            type='file'
-            className='hidden'
-            id='upload'
+  return (
+    <Grid container sx={{ marginTop: 10 }}>
+      {ready ?
+        (video ? (
+          <Editor
+            videoUrl={URL.createObjectURL(video)}
+            ffmpeg={ffmpeg}
           />
-          <FileDrop
-            onDrop={startUploading}
-            onTargetClick={() => document.getElementById('upload')?.click()}
-          >
-            Upload
-          </FileDrop>
-        </>
-      )}
-    </div>
-  </div>) : (<p>Loading...</p >);
+        ) : (
+          <Box component="span" sx={{ p: 2, width: '100%' }}>
+            <input
+              onChange={(e) => startUploading(e.target.files)}
+              type='file'
+              className='hidden'
+              id='upload'
+            />
+            <FileDrop
+              onDrop={startUploading}
+              onTargetClick={() => document.getElementById('upload')?.click()}
+            >
+              <Button>Upload</Button>
+            </FileDrop>
+          </Box>
+        )) : (<p>Loading...</p >)}
+    </Grid>);
 }
 
 export default App;
