@@ -17,17 +17,18 @@ interface TimelineProps {
 const difference = 0.2
 
 const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timings, setTimings, seekerBar }) => {
-    const currentlyGrabbedRef = useRef({ 'index': 0, 'type': 'none' })
+    const currentlyGrabbedRef = useRef({ 'index': 'grabber_0', 'type': 'none' })
     const progressBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
     const playBackBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
 
     useEffect(() => {
-        const currentIndex = currentlyGrabbedRef.current.index
+        const currentIndex = timings.findIndex(i => i.id === currentlyGrabbedRef.current.index);
+        if (!currentIndex) return;
         const seek = (playVideoRef?.current?.currentTime - timings[0].start) / playVideoRef.current.duration * 100
         progressBarRef.current.style.width = `${seek}%`
         if (!!timings[currentIndex + 1] && (playVideoRef.current.currentTime >= timings[currentIndex].end)) {
             playVideoRef.current.pause()
-            currentlyGrabbedRef.current = ({ 'index': currentIndex + 1, 'type': 'start' })
+            currentlyGrabbedRef.current = ({ 'index': timings[currentIndex + 1].id, 'type': 'start' })
             progressBarRef.current.style.width = '0%'
             progressBarRef.current.style.left = `${timings[currentIndex].start / playVideoRef.current.duration * 100}%`
             playVideoRef.current.currentTime = timings[currentIndex].start
@@ -49,20 +50,20 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
         addActiveSegments()
         let playbackRect = playBackBarRef.current.getBoundingClientRect()
         let seekRatio = (event.clientX - playbackRect.left) / playbackRect.width
-        const index = currentlyGrabbedRef.current.index
+        const index = timings.findIndex(i => i.id === currentlyGrabbedRef.current.index);
         const type = currentlyGrabbedRef.current.type
         let time = timings
         let seek = playVideoRef.current.duration * seekRatio
         if ((type === 'start') && (seek > ((index !== 0) ? (time[index - 1].end + difference + 0.2) : 0)) && seek < time[index].end - difference) {
             progressBarRef.current.style.left = `${seekRatio * 100}%`
             playVideoRef.current.currentTime = seek
-            time[index]['start'] = seek
+            time[index].start = seek
             setTimings([...time])
         }
         else if ((type === 'end') && (seek > time[index].start + difference) && (seek < (index !== (timings.length - 1) ? time[index].start - difference - 0.2 : playVideoRef.current.duration))) {
             progressBarRef.current.style.left = `${time[index].start / playVideoRef.current.duration * 100}%`
             playVideoRef.current.currentTime = time[index].start
-            time[index]['end'] = seek
+            time[index].end = seek
             setTimings([...time])
         }
         progressBarRef.current.style.width = '0%'
@@ -109,14 +110,14 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
         if (index === -1) {
             return
         }
-        currentlyGrabbedRef.current = { 'index': index, 'type': 'start' }
+        currentlyGrabbedRef.current = { 'index': timings[index].id, 'type': 'start' }
         progressBarRef.current.style.width = '0%'
         progressBarRef.current.style.left = `${timings[index].start / playVideoRef.current.duration * 100}%`
         playVideoRef.current.currentTime = seekTime
     }
     const deleteGrabber = (index: number) => {
         let time = timings
-        currentlyGrabbedRef.current = { 'index': 0, 'type': 'start' }
+        currentlyGrabbedRef.current = { 'index': timings[index].id, 'type': 'start' }
         if (time.length === 1) {
             return
         }
@@ -132,7 +133,7 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
             deleteGrabber(index)
         }
         else {
-            currentlyGrabbedRef.current = { 'index': index, 'type': type }
+            currentlyGrabbedRef.current = { 'index': timings[index].id, 'type': type }
             window.addEventListener('mousemove', handleMouseMoveWhenGrabbed)
             window.addEventListener('mouseup', removeMouseMoveEventListener)
         }
@@ -142,7 +143,7 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
             deleteGrabber(index)
         }
         else {
-            currentlyGrabbedRef.current = { 'index': index, 'type': type }
+            currentlyGrabbedRef.current = { 'index': timings[index].id, 'type': type }
             window.addEventListener('pointermove', handleMouseMoveWhenGrabbed)
             window.addEventListener('pointerup', removePointerMoveEventListener)
         }

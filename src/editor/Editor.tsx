@@ -1,17 +1,18 @@
 // /* eslint-disable func-names */
-import { useState, useRef, useEffect, FC } from 'react'
+import { useState, useRef, useEffect, FC, useCallback } from 'react'
 import './editor.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPause, faPlay, faSync, faStepBackward, faStepForward, faCamera, faDownload, faEraser, faGripLinesVertical } from '@fortawesome/free-solid-svg-icons'
 
 import { fetchFile, FFmpeg } from '@ffmpeg/ffmpeg'
 import { Box } from '@mui/material'
+import debounce from 'lodash.debounce';
+
+
 import { Timeline } from '../timeline/Timeline'
 import { forceDownload } from './utilis'
 import { ErrorBoundary } from '../ErrorBoundary'
-
-interface Timing { 'start': number, 'end': number }
-
+import { Timing } from '../types'
 
 const difference = 0.2
 
@@ -57,7 +58,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         setLoaded(true)
         console.log("metadata loaded", playVideoRef.current?.duration)
         //Handles the start and end metadata for the timings state
-        const time = [{ 'start': 0, 'end': playVideoRef.current?.duration! }]
+        const time: Timing[] = [{ id: 'grabber_' + timings.length, 'start': 0, 'end': playVideoRef.current?.duration! }]
         setTimings([...timings, ...time])
     }
 
@@ -71,7 +72,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
             currentlyGrabbedRef.current = { 'index': 0, 'type': 'none' }
             setImageUrl('')
 
-            setTimings([...timings, ...[{ 'start': 0, 'end': playVideoRef.current.duration }]])
+            setTimings([{ id: 'grabber_0', 'start': 0, 'end': playVideoRef.current.duration }])
             playVideoRef.current.currentTime = timings[0].start
         }
     }
@@ -121,16 +122,22 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         }
     }
 
-    //Function handling adding new trim markers logic
     const addGrabber = () => {
-        const time = timings
+        const time: Timing[] = timings
         const end = time[time.length - 1].end + difference
-        if (end >= playVideoRef.current.duration) {
+        if (end > playVideoRef.current.duration) {
             return
         }
-        time.push({ 'start': end + 0.2, 'end': playVideoRef.current.duration })
-        setTimings([...timings, ...time])
+        if (!timings.find(i => i.id === 'grabber_' + time.length)) {
+            time.push({ id: 'grabber_' + time.length, 'start': end + 0.2, 'end': playVideoRef.current.duration })
+            setTimings([...time])
+        }
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedAddGrabberHandler = useCallback(
+        debounce(addGrabber, 300)
+        , [timings]);
 
     const saveVideo = async () => {
         let metadata = {
@@ -205,7 +212,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                 </div>
                 <div>
                     <button title='Delete grabber' className='trim-control margined' onClick={() => setDeletingGrabber(true)}>Delete <FontAwesomeIcon icon={faGripLinesVertical} /></button>
-                    <button title='Add grabber' className='trim-control margined' onClick={addGrabber}>Add <FontAwesomeIcon icon={faGripLinesVertical} /></button>
+                    <button title='Add grabber' className='trim-control margined' onClick={debouncedAddGrabberHandler}>Add <FontAwesomeIcon icon={faGripLinesVertical} /></button>
                     <button title='Save changes' className='trim-control' onClick={saveVideo}>Save</button>
                 </div>
             </div>

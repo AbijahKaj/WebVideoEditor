@@ -1,1 +1,5 @@
-export interface Timing { 'start': number, 'end': number }
+export interface Timing {
+    id: string;
+    'start': number,
+    'end': number
+}
