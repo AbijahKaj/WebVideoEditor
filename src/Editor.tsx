@@ -20,17 +20,8 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
     //Float integer state to help with trimming duration logic
     const [difference, setDifference] = useState(0.2)
 
-    //Boolean state to handle deleting grabber functionality
-    const [deletingGrabber, setDeletingGrabber] = useState(false)
-
-    //State for error handling
-    const [currentWarning, setCurrentWarning] = useState<string | null>(null)
-
     //State for imageUrl
     const [imageUrl, setImageUrl] = useState('')
-
-    //Boolean state handling trimmed video
-    const [trimmingDone, setTrimmingDone] = useState(false)
 
     //Integer state to blue progress bar as video plays
     const [seekerBar, setSeekerBar] = useState(0)
@@ -50,9 +41,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
 
     //Ref handling the element of the current play time
     const playBackBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-
-    //State handling storing of the trimmed video
-    const [trimmedVideo, setTrimmedVideo] = useState<string>()
 
     //Integer state to handle the progress bars numerical incremation
     const [progress, setProgress] = useState(0)
@@ -95,16 +83,14 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         }
     }
 
-    //Lifecycle that handles removing event listener from the mouse event on trimmer - Desktop browser
     useEffect(() => {
         return () => {
-            window.removeEventListener('mouseup', removeMouseMoveEventListener)
-            window.removeEventListener('pointerup', removePointerMoveEventListener)
+            window.removeEventListener('mouseup', handleMouseMoveWhenGrabbed)
+            window.removeEventListener('pointerup', handleMouseMoveWhenGrabbed)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    //Function handling the trimmer movement logic
     const handleMouseMoveWhenGrabbed = (event: { clientX: number }) => {
         if (progressBarRef.current && playBackBarRef.current && playVideoRef.current) {
             playVideoRef.current?.pause()
@@ -134,17 +120,14 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
 
     }
 
-    //Function that handles removing event listener from the mouse event on trimmer - Desktop browser
     const removeMouseMoveEventListener = () => {
         window.removeEventListener('mousemove', handleMouseMoveWhenGrabbed)
     }
 
-    //Lifecycle that handles removing event listener from the mouse event on trimmer - Mobile browser
     const removePointerMoveEventListener = () => {
         window.removeEventListener('pointermove', handleMouseMoveWhenGrabbed)
     }
 
-    //Function handling reset logic
     const reset = () => {
         if (playVideoRef.current && progressBarRef.current) {
 
@@ -154,8 +137,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
             setPlaying(false)
             currentlyGrabbedRef.current = { 'index': 0, 'type': 'none' }
             setDifference(0.2)
-            setDeletingGrabber(false)
-            setCurrentWarning(null)
             setImageUrl('')
 
             setTimings([{ 'start': 0, 'end': playVideoRef.current.duration }])
@@ -166,19 +147,16 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         }
     }
 
-    //Function handling thumbnail logic
     const captureSnapshot = () => {
         let video = playVideoRef.current!
         const canvas = document.createElement('canvas')
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
         canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height)
-        // convert it to a usable data URL
         const dataURL = canvas.toDataURL()
         setImageUrl(dataURL)
     }
 
-    //Function handling download of thumbnail logic
     const downloadSnapshot = () => {
         let a = document.createElement('a')
         a.href = imageUrl
@@ -186,14 +164,12 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         a.click()
     }
 
-    //Function handling skip to previous logic
     const skipPrevious = () => {
         if (playing) {
             playVideoRef.current?.pause()
         }
     }
 
-    //Function handling play and pause logic
     const playPause = () => {
         if (!timings[0]) {
             onloadedmetadata()
@@ -218,20 +194,17 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         setPlaying(!playing)
     }
 
-    //Function handling skip to next logic
     const skipNext = () => {
         if (playing) {
             playVideoRef.current?.pause()
         }
     }
 
-    //Function handling updating progress logic (clicking on progress bar to jump to different time durations)
     const updateProgress = (event: { clientX: number }) => {
         if (progressBarRef.current && playBackBarRef.current && playVideoRef.current) {
             let playbackRect = playBackBarRef.current?.getBoundingClientRect()
             let seekTime = ((event.clientX - playbackRect?.left!) / playbackRect?.width!) * playVideoRef.current?.duration!
             playVideoRef.current?.pause()
-            // find where seekTime is in the segment
             let index = -1
             let counter = 0
             for (let times of timings) {
@@ -245,14 +218,13 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
             }
             setPlaying(false)
             currentlyGrabbedRef.current = { 'index': index, 'type': 'start' }
-            progressBarRef.current.style.width = '0%' // Since the width is set later, this is necessary to hide weird UI
+            progressBarRef.current.style.width = '0%'
             progressBarRef.current.style.left = `${timings[index].start / playVideoRef.current.duration * 100}%`
             playVideoRef.current.currentTime = seekTime
         }
 
     }
 
-    //Function handling logic of time segments throughout videos duration
     const addActiveSegments = () => {
         if (playVideoRef.current && playBackBarRef.current) {
             let colors = ''
@@ -270,7 +242,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         }
     }
 
-    // Function handling logic for post trimmed video
     const saveVideo = async () => {
         let metadata = {
             'trim_times': timings,
@@ -301,9 +272,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
             const data = ffmpeg.FS('readFile', 'output.mp4')
 
             const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }))
-
-            setTrimmedVideo(url)
-            setTrimmingDone(true)
             forceDownload(url);
         }
         catch (error) {
