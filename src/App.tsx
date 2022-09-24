@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { FileDrop } from 'react-file-drop'
+import Editor from './Editor';
 
 
 const ffmpeg = createFFmpeg({ log: true });
@@ -30,14 +31,10 @@ function App() {
   return ready ? (<div className="App">
     <div className={'wrapper'}>
       {video ? (
-        <div
-          style={{
-            maxHeight: '100vh',
-          }}> <video
-            controls={false}
-          >
-            <source src={URL.createObjectURL(video)}></source>
-          </video></div>
+        <Editor
+				videoUrl={URL.createObjectURL(video)}
+        ffmpeg={ffmpeg}
+			/>
       ) : (
         <>
           <input
