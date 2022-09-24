@@ -57,13 +57,13 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
             progressBarRef.current.style.left = `${seekRatio * 100}%`
             playVideoRef.current.currentTime = seek
             time[index]['start'] = seek
-            setTimings([...timings, ...time])
+            setTimings([...time])
         }
         else if ((type === 'end') && (seek > time[index].start + difference) && (seek < (index !== (timings.length - 1) ? time[index].start - difference - 0.2 : playVideoRef.current.duration))) {
             progressBarRef.current.style.left = `${time[index].start / playVideoRef.current.duration * 100}%`
             playVideoRef.current.currentTime = time[index].start
             time[index]['end'] = seek
-            setTimings([...timings, ...time])
+            setTimings([...time])
         }
         progressBarRef.current.style.width = '0%'
     }

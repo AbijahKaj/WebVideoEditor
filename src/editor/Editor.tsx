@@ -13,6 +13,8 @@ import { ErrorBoundary } from '../ErrorBoundary'
 interface Timing { 'start': number, 'end': number }
 
 
+const difference = 0.2
+
 const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) => {
 
     //Boolean state to handle video mute
@@ -20,9 +22,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
 
     //Boolean state to handle whether video is playing or not
     const [playing, setPlaying] = useState(false)
-
-    //Float integer state to help with trimming duration logic
-    const [difference, setDifference] = useState(0.2)
 
     //State for imageUrl
     const [imageUrl, setImageUrl] = useState('')
@@ -43,15 +42,10 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
     //Ref handling the initial video element for trimming
     const playVideoRef = useRef<HTMLVideoElement>() as React.MutableRefObject<HTMLVideoElement>;
 
-    //Ref handling the progress bar element
-    const progressBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-
-    //Integer state to handle the progress bars numerical incremation
     const [progress, setProgress] = useState(0)
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-
         window.addEventListener('keyup', (event) => {
             if (event.key === ' ') {
                 playPause()
@@ -68,7 +62,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
     }
 
     const reset = () => {
-        if (playVideoRef.current && progressBarRef.current) {
+        if (playVideoRef.current) {
 
             playVideoRef.current?.pause()
 
@@ -77,10 +71,8 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
             currentlyGrabbedRef.current = { 'index': 0, 'type': 'none' }
             setImageUrl('')
 
-            setTimings([{ 'start': 0, 'end': playVideoRef.current.duration }])
+            setTimings([...timings, ...[{ 'start': 0, 'end': playVideoRef.current.duration }]])
             playVideoRef.current.currentTime = timings[0].start
-            progressBarRef.current.style.left = `${timings[0].start / playVideoRef.current.duration * 100}%`
-            progressBarRef.current.style.width = '0%'
         }
     }
 
@@ -108,9 +100,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
     }
 
     const playPause = () => {
-        if (!timings[0]) {
-            onloadedmetadata()
-        }
         if (playing) {
             playVideoRef.current?.pause()
         }
@@ -120,11 +109,6 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                 setPlaying(false)
                 currentlyGrabbedRef.current = { 'index': 0, 'type': 'start' }
                 playVideoRef.current.currentTime = timings[0].start
-                if (progressBarRef.current) {
-                    progressBarRef.current.style.left = `${timings[0].start / playVideoRef.current.duration * 100}%`
-                    progressBarRef.current.style.width = '0%'
-                }
-
             }
             playVideoRef.current?.play()
         }

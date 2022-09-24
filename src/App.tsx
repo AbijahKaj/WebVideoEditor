@@ -6,7 +6,7 @@ import Editor from './editor/Editor';
 import { Box, Button, Grid } from '@mui/material';
 
 
-const ffmpeg = createFFmpeg({ corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js', log: true });
+const ffmpeg = createFFmpeg({ log: true });
 
 function App() {
   const [ready, setReady] = useState(false);
