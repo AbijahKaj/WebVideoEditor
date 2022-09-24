@@ -1,0 +1,1 @@
+export interface Timing { 'start': number, 'end': number }

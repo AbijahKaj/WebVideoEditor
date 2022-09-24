@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { FileDrop } from 'react-file-drop'
-import Editor from './Editor';
+import Editor from './editor/Editor';
 import { Box, Button, Grid } from '@mui/material';
 
 
@@ -13,8 +13,10 @@ function App() {
   const [video, setVideo] = useState<MediaSource | File>();
 
   const load = async () => {
-    await ffmpeg.load();
-    setReady(true);
+    if (!ffmpeg.isLoaded()) {
+      await ffmpeg.load();
+      setReady(true);
+    }
   }
   useEffect(() => {
     load();
