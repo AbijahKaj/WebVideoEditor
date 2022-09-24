@@ -10,7 +10,7 @@ import debounce from 'lodash.debounce';
 
 
 import { Timeline } from '../timeline/Timeline'
-import { forceDownload } from './utilis'
+import { forceDownload, isOverlapping } from './utilis'
 import { ErrorBoundary } from '../ErrorBoundary'
 import { Timing } from '../types'
 
@@ -128,8 +128,9 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         if (end > playVideoRef.current.duration) {
             return
         }
-        if (!timings.find(i => i.id === 'grabber_' + time.length)) {
-            time.push({ id: 'grabber_' + time.length, 'start': end + 0.2, 'end': playVideoRef.current.duration })
+        const newGrabber = { id: 'grabber_' + time.length, 'start': end + 0.2, 'end': playVideoRef.current.duration };
+        if (!timings.find(i => i.id === 'grabber_' + time.length) && !isOverlapping(timings, newGrabber)) {
+            time.push(newGrabber)
             setTimings([...time])
         }
     }
@@ -194,6 +195,7 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
             >
                 <source src={videoUrl} type='video/mp4' />
             </video>
+
             {loaded && (
                 <ErrorBoundary>
                     <Timeline timings={timings} seekerBar={seekerBar} playVideoRef={playVideoRef} deletingGrabber={deletingGrabber} setTimings={setTimings} />

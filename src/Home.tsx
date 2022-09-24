@@ -22,7 +22,11 @@ function Copyright() {
     );
 }
 
-const theme = createTheme();
+const theme = createTheme({
+    palette: {
+        mode: 'dark',
+    },
+});
 
 export default function Home() {
     return (

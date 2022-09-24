@@ -152,7 +152,7 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
         <div className='playback'>
             {timings.length > 0 &&
                 timings.map((timing, index) => (
-                    <Grabber videoDuration={playVideoRef.current?.duration} timing={timing} index={index} onMouseDown={onMouseDown} onPointerDown={onPointerDown} />
+                    <Grabber key={index} videoDuration={playVideoRef.current?.duration} timing={timing} index={index} onMouseDown={onMouseDown} onPointerDown={onPointerDown} />
                 ))}
             <div className='seekable' ref={playBackBarRef} onClick={updateProgress}></div>
             <div className='progress' ref={progressBarRef}></div>

@@ -3,7 +3,8 @@ import './App.css';
 import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { FileDrop } from 'react-file-drop'
 import Editor from './editor/Editor';
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button, Divider, Grid, Typography } from '@mui/material';
+import { UploadFileOutlined } from '@mui/icons-material';
 
 
 const ffmpeg = createFFmpeg({ log: true });
@@ -51,7 +52,17 @@ function App() {
               onDrop={startUploading}
               onTargetClick={() => document.getElementById('upload')?.click()}
             >
-              <Button>Upload</Button>
+              <Button variant="outlined" sx={{ marginBottom: 5 }}>Upload</Button>
+              <Box alignContent={'space-around'}>
+                <UploadFileOutlined color='secondary' />
+                <Typography
+                  variant="subtitle1"
+                  align="center"
+                  color="text.secondary"
+                  component="p"
+                >Or Drag&Drop a file
+                </Typography>
+              </Box>
             </FileDrop>
           </Box>
         )) : (<p>Loading...</p >)}
