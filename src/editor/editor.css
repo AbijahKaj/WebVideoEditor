@@ -43,8 +43,6 @@
 }
 
 .video {
-    width: 100%;
-    height: fit-content;
     cursor: pointer;
     border-radius: 1em;
 }
@@ -52,7 +50,7 @@
 .playback {
     position: relative;
     margin-top: 1rem;
-    height: 10px;
+    height: 50px;
     background: #2f3b44;
     margin-bottom: 1rem;
     border-radius: 1em;
@@ -85,14 +83,16 @@
 
 .playback .grabber.start {
     background: #a8d736;
+    border-radius: 5px 0 0 5px;
 }
 
 .playback .grabber.end {
     background: #fc4242;
+    border-radius: 0 5px 5px 0;
 }
 
 .playback .grabber:hover {
-    transform: scaleY(1.4);
+    transform: scaleY(1.08);
 }
 
 .playback .progress {

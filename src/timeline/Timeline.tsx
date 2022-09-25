@@ -1,7 +1,8 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import { Dispatch, FC, SetStateAction, useEffect, useRef } from "react";
 import { Timing } from "../types";
 import { Grabber } from "./Grabber";
+import './timeline.css'
 
 
 
@@ -18,24 +19,22 @@ const difference = 0.2
 
 const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timings, setTimings, seekerBar }) => {
     const currentlyGrabbedRef = useRef({ 'index': 'grabber_0', 'type': 'none' })
-    const progressBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
     const playBackBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+    const playSeekRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
 
     useEffect(() => {
         const currentIndex = timings.findIndex(i => i.id === currentlyGrabbedRef.current.index);
         if (!currentIndex) return;
         const seek = (playVideoRef?.current?.currentTime - timings[0].start) / playVideoRef.current.duration * 100
-        progressBarRef.current.style.width = `${seek}%`
-        if (!!timings[currentIndex + 1] && (playVideoRef.current.currentTime >= timings[currentIndex].end)) {
+        playSeekRef.current.style.left = `${seek}%`
+        if (!!timings[currentIndex] && !!timings[currentIndex + 1] && (playVideoRef.current.currentTime >= timings[currentIndex].end)) {
             playVideoRef.current.pause()
             currentlyGrabbedRef.current = ({ 'index': timings[currentIndex + 1].id, 'type': 'start' })
-            progressBarRef.current.style.width = '0%'
-            progressBarRef.current.style.left = `${timings[currentIndex].start / playVideoRef.current.duration * 100}%`
             playVideoRef.current.currentTime = timings[currentIndex].start
             playVideoRef.current.play()
         }
         console.log(timings)
-    }, [playVideoRef, timings, currentlyGrabbedRef, progressBarRef, playVideoRef.current.currentTime])
+    }, [playVideoRef, timings, currentlyGrabbedRef, playVideoRef.current.currentTime])
 
     useEffect(() => {
         return () => {
@@ -55,18 +54,17 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
         let time = timings
         let seek = playVideoRef.current.duration * seekRatio
         if ((type === 'start') && (seek > ((index !== 0) ? (time[index - 1].end + difference + 0.2) : 0)) && seek < time[index].end - difference) {
-            progressBarRef.current.style.left = `${seekRatio * 100}%`
+            playSeekRef.current.style.left = `${seekRatio * 100}%`
             playVideoRef.current.currentTime = seek
             time[index].start = seek
             setTimings([...time])
         }
         else if ((type === 'end') && (seek > time[index].start + difference) && (seek < (index !== (timings.length - 1) ? time[index].start - difference - 0.2 : playVideoRef.current.duration))) {
-            progressBarRef.current.style.left = `${time[index].start / playVideoRef.current.duration * 100}%`
+            playSeekRef.current.style.left = `${time[index].start / playVideoRef.current.duration * 100}%`
             playVideoRef.current.currentTime = time[index].start
             time[index].end = seek
             setTimings([...time])
         }
-        progressBarRef.current.style.width = '0%'
     }
 
     const addActiveSegments = useCallback(() => {
@@ -86,7 +84,7 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
     }, [playVideoRef, timings])
 
     useEffect(() => {
-        addActiveSegments()
+        //addActiveSegments()
     }, [timings, addActiveSegments])
     const removeMouseMoveEventListener = () => {
         window.removeEventListener('mousemove', handleMouseMoveWhenGrabbed)
@@ -111,8 +109,7 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
             return
         }
         currentlyGrabbedRef.current = { 'index': timings[index].id, 'type': 'start' }
-        progressBarRef.current.style.width = '0%'
-        progressBarRef.current.style.left = `${timings[index].start / playVideoRef.current.duration * 100}%`
+        playSeekRef.current.style.left = `${((event.clientX - playbackRect?.left!) / playbackRect?.width) * 100}%`
         playVideoRef.current.currentTime = seekTime
     }
     const deleteGrabber = (index: number) => {
@@ -122,9 +119,7 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
             return
         }
         time.splice(index, 1)
-        progressBarRef.current.style.left = `${time[0].start / playVideoRef.current.duration * 100}%`
         playVideoRef.current.currentTime = time[0].start
-        progressBarRef.current.style.width = '0%'
         setTimings([...timings, ...time])
     }
 
@@ -150,12 +145,14 @@ const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timing
     }
     return (
         <div className='playback'>
+            <div style={{ display: 'none' }}>
+                <div id={"playSeek"} className="playSeek" ref={playSeekRef} />
+            </div>
             {timings.length > 0 &&
                 timings.map((timing, index) => (
                     <Grabber key={index} videoDuration={playVideoRef.current?.duration} timing={timing} index={index} onMouseDown={onMouseDown} onPointerDown={onPointerDown} />
                 ))}
             <div className='seekable' ref={playBackBarRef} onClick={updateProgress}></div>
-            <div className='progress' ref={progressBarRef}></div>
         </div>
     )
 

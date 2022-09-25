@@ -1,0 +1,8 @@
+.playSeek {
+    position: 'absolute';
+    left: 20%;
+    height: 100px;
+    width: 2px;
+    background-color: aqua;
+    top: 0;
+}

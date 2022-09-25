@@ -15,6 +15,12 @@ export class ErrorBoundary extends React.Component<{ [key: string]: any }, { err
         // You can also log error messages to an error reporting service here
     }
 
+    componentDidUpdate(prevProps: Readonly<{ [key: string]: any; }>, prevState: Readonly<{ error: any; errorInfo: any; }>, snapshot?: any): void {
+        if (prevProps !== this.props) {
+            this.setState({ error: null, errorInfo: null })
+        }
+    }
+
     render() {
         if (this.state.errorInfo) {
             // Error path

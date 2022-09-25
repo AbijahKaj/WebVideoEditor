@@ -179,28 +179,28 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
 
     return (
         <Box component="span" sx={{ p: 2, width: '100%' }}>
-            <video className='video'
-                muted={isMuted}
-                ref={playVideoRef}
-                onLoadedMetadata={onloadedmetadata}
-                onLoadedData={() => {
-                    console.log(playVideoRef)
-                }}
-                onClick={() => {
-                    playPause()
-                }}
-                onTimeUpdate={(event) => {
-                    setSeekerBar(event.currentTarget.currentTime)
-                }}
-            >
-                <source src={videoUrl} type='video/mp4' />
-            </video>
-
-            {loaded && (
-                <ErrorBoundary>
-                    <Timeline timings={timings} seekerBar={seekerBar} playVideoRef={playVideoRef} deletingGrabber={deletingGrabber} setTimings={setTimings} />
-                </ErrorBoundary>
-            )}
+            <Box sx={{ alignItems: "space-between", justifyItems: "center" }}>
+                <video className='video'
+                    style={{
+                        width: '60vw',
+                        height: '40vh'
+                    }}
+                    muted={isMuted}
+                    ref={playVideoRef}
+                    onLoadedMetadata={onloadedmetadata}
+                    onLoadedData={() => {
+                        console.log(playVideoRef)
+                    }}
+                    onClick={() => {
+                        playPause()
+                    }}
+                    onTimeUpdate={(event) => {
+                        setSeekerBar(event.currentTarget.currentTime)
+                    }}
+                >
+                    <source src={videoUrl} type='video/mp4' />
+                </video>
+            </Box>
 
             <div className='controls'>
                 <div className='player-controls'>
@@ -218,6 +218,11 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                     <button title='Save changes' className='trim-control' onClick={saveVideo}>Save</button>
                 </div>
             </div>
+            {loaded && (
+                <ErrorBoundary>
+                    <Timeline timings={timings} seekerBar={seekerBar} playVideoRef={playVideoRef} deletingGrabber={deletingGrabber} setTimings={setTimings} />
+                </ErrorBoundary>
+            )}
             {(imageUrl !== '') ?
                 <div className={'marginVertical'}>
                     <img src={imageUrl} className={'thumbnail'} alt='Photos' />
