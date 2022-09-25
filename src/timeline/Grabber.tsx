@@ -1,5 +1,4 @@
 import { Box } from "@mui/system"
-import React, { useEffect, useState } from "react"
 import { FC } from "react"
 import { Timing } from "../types"
 

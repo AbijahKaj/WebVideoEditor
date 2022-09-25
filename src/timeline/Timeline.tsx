@@ -4,21 +4,22 @@ import { Timing } from "../types";
 import { Grabber } from "./Grabber";
 import './timeline.css'
 
-
-
 interface TimelineProps {
     playVideoRef: React.MutableRefObject<HTMLVideoElement>;
     timings: Timing[];
     setTimings: Dispatch<SetStateAction<Timing[]>>;
     deletingGrabber: boolean;
-    seekerBar: number
+    seekerBar: number;
+    currentlyGrabbedRef: React.MutableRefObject<{
+        index: string;
+        type: string;
+    }>
 }
 
 
 const difference = 0.2
 
-const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timings, setTimings, seekerBar }) => {
-    const currentlyGrabbedRef = useRef({ 'index': 'grabber_0', 'type': 'none' })
+const TimelineComp: FC<TimelineProps> = ({ playVideoRef, deletingGrabber, timings, setTimings, currentlyGrabbedRef }) => {
     const playBackBarRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
     const playSeekRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
 

@@ -1,75 +1,58 @@
-// /* eslint-disable func-names */
 import { useState, useRef, useEffect, FC, useCallback } from 'react'
 import './editor.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPause, faPlay, faSync, faStepBackward, faStepForward, faCamera, faDownload, faEraser, faGripLinesVertical } from '@fortawesome/free-solid-svg-icons'
 
 import { fetchFile, FFmpeg } from '@ffmpeg/ffmpeg'
-import { Box } from '@mui/material'
+import { Alert, AlertTitle, Box, Button } from '@mui/material'
 import debounce from 'lodash.debounce';
-
 
 import { Timeline } from '../timeline/Timeline'
 import { forceDownload, isOverlapping } from './utilis'
 import { ErrorBoundary } from '../ErrorBoundary'
 import { Timing } from '../types'
+import { DownloadRounded } from '@mui/icons-material'
 
 const difference = 0.2
 
 const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) => {
-
-    //Boolean state to handle video mute
     const [isMuted, setIsMuted] = useState(false)
-
-    //Boolean state to handle whether video is playing or not
     const [playing, setPlaying] = useState(false)
-
-    //State for imageUrl
+    const [exporting, setExporting] = useState(false)
     const [imageUrl, setImageUrl] = useState('')
-
-    //Integer state to blue progress bar as video plays
     const [seekerBar, setSeekerBar] = useState(0)
-
-    //Stateful array handling storage of the start and end times of videos
     const [timings, setTimings] = useState<Timing[]>([])
-
     const [loaded, setLoaded] = useState(false)
     const [deletingGrabber, setDeletingGrabber] = useState(false)
 
-
-    //Ref handling metadata needed for trim markers
-    const currentlyGrabbedRef = useRef({ 'index': 0, 'type': 'none' })
-
-    //Ref handling the initial video element for trimming
+    const currentlyGrabbedRef = useRef({ 'index': 'grabber_0', 'type': 'none' })
     const playVideoRef = useRef<HTMLVideoElement>() as React.MutableRefObject<HTMLVideoElement>;
 
     const [progress, setProgress] = useState(0)
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         window.addEventListener('keyup', (event) => {
             if (event.key === ' ') {
                 playPause()
             }
         })
-    })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playing])
 
     const onloadedmetadata = () => {
         setLoaded(true)
+        playVideoRef.current.dataset.vidSrc = playVideoRef.current.src;
         console.log("metadata loaded", playVideoRef.current?.duration)
-        //Handles the start and end metadata for the timings state
         const time: Timing[] = [{ id: 'grabber_' + timings.length, 'start': 0, 'end': playVideoRef.current?.duration! }]
         setTimings([...timings, ...time])
     }
 
     const reset = () => {
         if (playVideoRef.current) {
-
             playVideoRef.current?.pause()
-
             setIsMuted(false)
             setPlaying(false)
-            currentlyGrabbedRef.current = { 'index': 0, 'type': 'none' }
+            currentlyGrabbedRef.current = { 'index': 'grabber_0', 'type': 'none' }
             setImageUrl('')
 
             setTimings([{ id: 'grabber_0', 'start': 0, 'end': playVideoRef.current.duration }])
@@ -101,19 +84,22 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
     }
 
     const playPause = () => {
-        if (playing) {
+        if (playing && playVideoRef.current) {
             playVideoRef.current?.pause()
+            setPlaying(false)
         }
-        else {
-            if ((playVideoRef.current && playVideoRef.current.currentTime >= timings[0].end)) {
+        else if (playVideoRef.current) {
+            const index = timings.findIndex(i => i.id === currentlyGrabbedRef.current.index);
+            if (playVideoRef.current.currentTime >= timings[index].end) {
                 playVideoRef.current.pause()
                 setPlaying(false)
-                currentlyGrabbedRef.current = { 'index': 0, 'type': 'start' }
-                playVideoRef.current.currentTime = timings[0].start
+                playVideoRef.current.currentTime = timings[index].start
+            } else {
+                playVideoRef.current?.play()
+                setPlaying(true)
             }
-            playVideoRef.current?.play()
+
         }
-        setPlaying(!playing)
     }
 
     const skipNext = () => {
@@ -141,6 +127,8 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         , [timings]);
 
     const saveVideo = async () => {
+        setExporting(true);
+        setProgress(0);
         let metadata = {
             'trim_times': timings,
             'mute': isMuted
@@ -154,6 +142,8 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
         console.log('Trimmed Duration: ', trimmedVideo)
         console.log('Trim End: ', trimEnd)
 
+        const allowMultipleExports = false // Experimental
+
         try {
             ffmpeg.FS('writeFile', 'myFile.mp4', await fetchFile(videoUrl))
 
@@ -165,21 +155,42 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                 setProgress(Math.round(ratio * 100))
             })
 
-            await ffmpeg.run('-ss', `${trimStart}`, '-accurate_seek', '-i', 'myFile.mp4', '-to', `${trimmedVideo}`, '-codec', 'copy', 'output.mp4')
+            if (allowMultipleExports) {
+                let command = ['myFile.mp4'],
+                    concateFiles = ''
+                timings.forEach((timing) => {
+                    command = [...command, '-t', `${timing.start}`, `${timing.id}.mp4`, '-ss', `${timing.end - timing.start}`];
+                    concateFiles += `file '${timing.id}.mp4'\n`;
+                })
+                // Create mutiple files
+                await ffmpeg.run('-i', ...command)
+                //ffmpeg.FS('writeFile', 'timings.txt', concateFiles)
+                // Join the files together
+                await ffmpeg.run('-f', 'concat', '-i', concateFiles, '-c', 'copy', 'output.mp4')
+            } else {
+                await ffmpeg.run('-ss', `${trimStart}`, '-accurate_seek', '-i', 'myFile.mp4', '-to', `${trimmedVideo}`, '-codec', 'copy', 'output.mp4')
+            }
 
             const data = ffmpeg.FS('readFile', 'output.mp4')
 
             const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }))
             forceDownload(url);
+            // Free up the memory
+            ffmpeg.FS('unlink', 'output.mp4');
         }
         catch (error) {
             console.log(error)
+            setExporting(false)
+        } finally {
+            setProgress(0)
+            setExporting(false)
         }
+        setExporting(false)
     }
 
     return (
         <Box component="span" sx={{ p: 2, width: '100%' }}>
-            <Box sx={{ alignItems: "space-between", justifyItems: "center" }}>
+            <Box sx={{ alignItems: "space-between", justifyItems: "center", p: 3 }}>
                 <video className='video'
                     style={{
                         width: '60vw',
@@ -213,17 +224,22 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                     <button className='seek-end' title='Skip to next clip' onClick={skipNext}><FontAwesomeIcon icon={faStepForward} /></button>
                 </div>
                 <div>
-                    <button title='Delete grabber' className='trim-control margined' onClick={() => setDeletingGrabber(true)}>Delete <FontAwesomeIcon icon={faGripLinesVertical} /></button>
-                    <button title='Add grabber' className='trim-control margined' onClick={debouncedAddGrabberHandler}>Add <FontAwesomeIcon icon={faGripLinesVertical} /></button>
-                    <button title='Save changes' className='trim-control' onClick={saveVideo}>Save</button>
+                    <Button size={'small'} sx={{ marginRight: '5px' }} title='Delete grabber' className='trim-control margined' onClick={() => setDeletingGrabber(true)}>Delete <FontAwesomeIcon icon={faGripLinesVertical} /></Button>
+                    <Button size={'small'} sx={{ marginRight: '5px' }} title='Add grabber' className='trim-control margined' onClick={debouncedAddGrabberHandler}>Add <FontAwesomeIcon icon={faGripLinesVertical} /></Button>
+                    <Button size={'small'} title='Save changes' className='trim-control' onClick={saveVideo}>Save <DownloadRounded fontSize={'small'} /></Button>
                 </div>
             </div>
             {loaded && (
                 <ErrorBoundary>
-                    <Timeline timings={timings} seekerBar={seekerBar} playVideoRef={playVideoRef} deletingGrabber={deletingGrabber} setTimings={setTimings} />
+                    <Timeline
+                        currentlyGrabbedRef={currentlyGrabbedRef}
+                        timings={timings} seekerBar={seekerBar}
+                        playVideoRef={playVideoRef}
+                        deletingGrabber={deletingGrabber}
+                        setTimings={setTimings} />
                 </ErrorBoundary>
             )}
-            {(imageUrl !== '') ?
+            {(imageUrl !== '') &&
                 <div className={'marginVertical'}>
                     <img src={imageUrl} className={'thumbnail'} alt='Photos' />
                     <div className='controls'>
@@ -234,8 +250,15 @@ const Editor: FC<{ videoUrl: string, ffmpeg: FFmpeg }> = ({ videoUrl, ffmpeg }) 
                             }}><FontAwesomeIcon icon={faEraser} /></button>
                         </div>
                     </div>
-                </div>
-                : ''}
+                </div>}
+            {exporting && (
+                <Box>
+                    <Alert variant="outlined" severity="info">
+                        <AlertTitle>Info</AlertTitle>
+                        Your video is being exported —  Progress: <strong>{progress} %</strong>
+                    </Alert>
+                </Box>
+            )}
         </Box>
     )
 }

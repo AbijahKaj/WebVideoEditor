@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { FileDrop } from 'react-file-drop'
 import Editor from './editor/Editor';
-import { Box, Button, Divider, Grid, Typography } from '@mui/material';
+import { Box, Button, Grid, Typography } from '@mui/material';
 import { UploadFileOutlined } from '@mui/icons-material';
 
 
